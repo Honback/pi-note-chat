@@ -1,0 +1,22 @@
+# Environment
+.env
+.env.pi
+
+# Java
+backend/target/
+*.class
+*.jar
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Docker deploy artifacts
+.deploy/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+.DS_Store

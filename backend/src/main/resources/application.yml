@@ -1,0 +1,26 @@
+server:
+  port: 8080
+
+spring:
+  r2dbc:
+    url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:pinote}
+    username: ${DB_USER:pinote}
+    password: ${DB_PASS:pinote}
+
+  webflux:
+    base-path: /api
+
+management:
+  endpoints:
+    web:
+      base-path: /api/actuator
+      exposure:
+        include: health
+
+app:
+  ollama:
+    base-url: http://${OLLAMA_HOST:192.168.0.10}:${OLLAMA_PORT:11434}
+    model: ${OLLAMA_MODEL:gemma3:4b}
+    timeout-seconds: ${OLLAMA_TIMEOUT:300}
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost}
