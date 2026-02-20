@@ -151,7 +151,7 @@ export function SettingsModal() {
                 )}
                 {testResult.elapsed_ms !== undefined && (
                   <div className={styles.testMeta}>
-                    Response time: {testResult.elapsed_ms}ms
+                    Response time: {(testResult.elapsed_ms / 1000).toFixed(1)}s
                   </div>
                 )}
               </div>

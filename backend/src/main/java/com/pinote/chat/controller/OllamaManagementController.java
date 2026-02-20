@@ -24,7 +24,7 @@ public class OllamaManagementController {
     public Mono<Map<String, Object>> testConnection(@RequestBody(required = false) Map<String, String> body) {
         String prompt = (body != null && body.containsKey("prompt"))
                 ? body.get("prompt")
-                : "Say hello in one short sentence.";
+                : "1 + 1의 결과만 대답해줘";
 
         long startTime = System.currentTimeMillis();
 
