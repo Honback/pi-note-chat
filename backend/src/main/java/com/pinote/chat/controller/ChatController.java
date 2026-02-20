@@ -34,12 +34,16 @@ public class ChatController {
 
     private ServerSentEvent<String> toSse(ChatEvent event) {
         try {
-            String eventType = switch (event) {
-                case ChatEvent.MessageStart ignored -> "message-start";
-                case ChatEvent.Token ignored -> "token";
-                case ChatEvent.MessageEnd ignored -> "message-end";
-                case ChatEvent.Error ignored -> "error";
-            };
+            String eventType;
+            if (event instanceof ChatEvent.MessageStart) {
+                eventType = "message-start";
+            } else if (event instanceof ChatEvent.Token) {
+                eventType = "token";
+            } else if (event instanceof ChatEvent.MessageEnd) {
+                eventType = "message-end";
+            } else {
+                eventType = "error";
+            }
             String data = objectMapper.writeValueAsString(event);
             return ServerSentEvent.<String>builder()
                     .event(eventType)

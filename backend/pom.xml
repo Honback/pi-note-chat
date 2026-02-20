@@ -18,7 +18,7 @@
     <description>Local AI Chat System for Raspberry Pi 3 + Galaxy Note 10</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>17</java.version>
     </properties>
 
     <dependencies>
