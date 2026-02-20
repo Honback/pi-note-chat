@@ -8,6 +8,16 @@ export type SSECallback = {
 };
 
 /**
+ * Parse SSE data line - handles both "data: value" and "data:value" formats.
+ * Spring WebFlux may or may not include a space after the colon.
+ */
+function parseSSEField(line: string, prefix: string): string | null {
+  if (line.startsWith(prefix + ' ')) return line.slice(prefix.length + 1);
+  if (line.startsWith(prefix)) return line.slice(prefix.length);
+  return null;
+}
+
+/**
  * Send a chat message and stream the response via SSE using fetch + ReadableStream.
  * We use fetch instead of EventSource because we need to send a POST body.
  */
@@ -37,6 +47,9 @@ export async function sendChatMessage(
 
   const decoder = new TextDecoder();
   let buffer = '';
+  // CRITICAL: currentEvent must persist across chunks.
+  // SSE event: and data: lines can arrive in separate TCP chunks.
+  let currentEvent = '';
 
   try {
     while (true) {
@@ -47,13 +60,22 @@ export async function sendChatMessage(
       const lines = buffer.split('\n');
       buffer = lines.pop() || '';
 
-      let currentEvent = '';
-
       for (const line of lines) {
-        if (line.startsWith('event:')) {
-          currentEvent = line.slice(6).trim();
-        } else if (line.startsWith('data:')) {
-          const data = line.slice(5).trim();
+        // Empty line = end of SSE event block
+        if (line.trim() === '') {
+          currentEvent = '';
+          continue;
+        }
+
+        const eventValue = parseSSEField(line, 'event:');
+        if (eventValue !== null) {
+          currentEvent = eventValue.trim();
+          continue;
+        }
+
+        const dataValue = parseSSEField(line, 'data:');
+        if (dataValue !== null) {
+          const data = dataValue.trim();
           if (!data || !currentEvent) continue;
 
           try {
@@ -75,7 +97,6 @@ export async function sendChatMessage(
           } catch {
             // Skip unparseable data lines
           }
-          currentEvent = '';
         }
       }
     }

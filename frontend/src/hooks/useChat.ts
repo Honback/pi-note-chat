@@ -3,9 +3,12 @@ import { sendChatMessage } from '../api/chat';
 import { useChatStore } from '../store/chatStore';
 import type { Message } from '../types';
 
+const STREAM_TIMEOUT_MS = 60_000; // 60s safety timeout
+
 export function useChat() {
   const abortRef = useRef<AbortController | null>(null);
   const streamingRef = useRef(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const {
     currentConversation,
     isStreaming,
@@ -17,6 +20,16 @@ export function useChat() {
     loadConversations,
     createConversation,
   } = useChatStore();
+
+  const cleanup = useCallback(() => {
+    setIsStreaming(false);
+    streamingRef.current = false;
+    abortRef.current = null;
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }, [setIsStreaming]);
 
   const send = useCallback(async (content: string) => {
     // Prevent double sends using ref (avoids stale closure issues)
@@ -57,6 +70,23 @@ export function useChat() {
     const abort = new AbortController();
     abortRef.current = abort;
 
+    // Safety timeout: auto-abort if stream takes too long
+    timeoutRef.current = setTimeout(() => {
+      if (streamingRef.current) {
+        abort.abort();
+        const timeoutMsg: Message = {
+          id: crypto.randomUUID(),
+          conversationId: conversation!.id,
+          role: 'assistant',
+          content: 'Error: Response timeout. Ollama server may be unreachable or the model is taking too long.',
+          createdAt: new Date().toISOString(),
+        };
+        addMessage(timeoutMsg);
+        setStreamingContent('');
+        cleanup();
+      }
+    }, STREAM_TIMEOUT_MS);
+
     let assistantMsgId = '';
 
     try {
@@ -65,6 +95,16 @@ export function useChat() {
           assistantMsgId = event.messageId;
         },
         onToken: (event) => {
+          // Reset safety timeout on each token (model is responding)
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = setTimeout(() => {
+              if (streamingRef.current) {
+                abort.abort();
+                cleanup();
+              }
+            }, STREAM_TIMEOUT_MS);
+          }
           appendStreamingToken(event.content);
         },
         onEnd: (event) => {
@@ -101,7 +141,6 @@ export function useChat() {
     } catch (e) {
       if ((e as Error).name !== 'AbortError') {
         console.error('Chat failed:', e);
-        // Show error to user instead of silently failing
         const errorMsg: Message = {
           id: crypto.randomUUID(),
           conversationId: conversation.id,
@@ -113,11 +152,9 @@ export function useChat() {
         setStreamingContent('');
       }
     } finally {
-      setIsStreaming(false);
-      streamingRef.current = false;
-      abortRef.current = null;
+      cleanup();
     }
-  }, [currentConversation, addMessage, setStreamingContent, appendStreamingToken, setIsStreaming, updateConversationTitle, loadConversations, createConversation]);
+  }, [currentConversation, addMessage, setStreamingContent, appendStreamingToken, setIsStreaming, updateConversationTitle, loadConversations, createConversation, cleanup]);
 
   const stop = useCallback(() => {
     abortRef.current?.abort();

@@ -21,6 +21,7 @@ public class WebClientConfig {
     @Bean
     public WebClient ollamaWebClient() {
         HttpClient httpClient = HttpClient.create()
+                .option(io.netty.channel.ChannelOption.CONNECT_TIMEOUT_MILLIS, 10_000)
                 .responseTimeout(Duration.ofSeconds(timeoutSeconds));
 
         return WebClient.builder()
