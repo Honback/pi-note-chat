@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useSettingsStore } from '../../store/settingsStore';
+import { testOllamaConnection } from '../../api/ollama';
 import styles from './SettingsModal.module.css';
+
+interface TestResult {
+  success: boolean;
+  model: string;
+  response?: string;
+  elapsed_ms?: number;
+  error?: string;
+}
 
 export function SettingsModal() {
   const settingsOpen = useSettingsStore(s => s.settingsOpen);
@@ -18,12 +27,15 @@ export function SettingsModal() {
 
   const [newModel, setNewModel] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [isTesting, setIsTesting] = useState(false);
+  const [testResult, setTestResult] = useState<TestResult | null>(null);
 
   useEffect(() => {
     if (settingsOpen) {
       fetchStatus();
       fetchModels();
       fetchDeviceStats();
+      setTestResult(null);
     }
   }, [settingsOpen, fetchStatus, fetchModels, fetchDeviceStats]);
 
@@ -51,6 +63,24 @@ export function SettingsModal() {
     } else {
       setConfirmDelete(name);
       setTimeout(() => setConfirmDelete(null), 3000);
+    }
+  };
+
+  const handleTest = async () => {
+    if (isTesting) return;
+    setIsTesting(true);
+    setTestResult(null);
+    try {
+      const result = await testOllamaConnection();
+      setTestResult(result);
+    } catch (e) {
+      setTestResult({
+        success: false,
+        model: ollamaStatus?.currentModel || 'unknown',
+        error: (e as Error).message || 'Failed to reach backend',
+      });
+    } finally {
+      setIsTesting(false);
     }
   };
 
@@ -93,6 +123,37 @@ export function SettingsModal() {
             {ollamaStatus?.currentModel && (
               <div className={styles.currentModel}>
                 Active model: <strong>{ollamaStatus.currentModel}</strong>
+              </div>
+            )}
+          </section>
+
+          {/* Connection Test */}
+          <section className={styles.section}>
+            <h3>Connection Test</h3>
+            <button
+              className={styles.testBtn}
+              onClick={handleTest}
+              disabled={isTesting}
+            >
+              {isTesting ? 'Testing... (generating response)' : 'Test Connection (Send Token)'}
+            </button>
+            {testResult && (
+              <div className={`${styles.testResult} ${testResult.success ? styles.testSuccess : styles.testError}`}>
+                <div>
+                  <strong>{testResult.success ? 'Success' : 'Failed'}</strong>
+                  {' - '}
+                  {testResult.success
+                    ? `Model "${testResult.model}" responded`
+                    : (testResult.error || 'Unknown error')}
+                </div>
+                {testResult.response && (
+                  <div className={styles.testResponse}>{testResult.response}</div>
+                )}
+                {testResult.elapsed_ms !== undefined && (
+                  <div className={styles.testMeta}>
+                    Response time: {testResult.elapsed_ms}ms
+                  </div>
+                )}
               </div>
             )}
           </section>

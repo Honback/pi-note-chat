@@ -265,3 +265,56 @@
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
+
+/* Connection Test */
+.testBtn {
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.testBtn:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.testBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.testResult {
+  margin-top: 10px;
+  padding: 12px;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.testSuccess {
+  border-left: 3px solid var(--status-ok);
+}
+
+.testError {
+  border-left: 3px solid var(--status-error);
+}
+
+.testResponse {
+  margin-top: 8px;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.testMeta {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}

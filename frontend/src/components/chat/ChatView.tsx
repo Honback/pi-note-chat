@@ -21,19 +21,16 @@ export function ChatView() {
       </header>
 
       {currentConversation ? (
-        <>
-          <MessageList />
-          <ChatInput />
-        </>
+        <MessageList />
       ) : (
         <div className={styles.empty}>
           <div className={styles.emptyContent}>
             <h2>Pi-Note Chat</h2>
             <p>Local AI powered by your Galaxy Note 10</p>
-            <p className={styles.hint}>Create a new conversation to start chatting</p>
           </div>
         </div>
       )}
+      <ChatInput />
     </div>
   );
 }

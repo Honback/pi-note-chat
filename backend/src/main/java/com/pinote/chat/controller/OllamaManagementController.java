@@ -8,6 +8,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 @RestController
 @RequestMapping("/ollama")
@@ -17,6 +18,46 @@ public class OllamaManagementController {
 
     public OllamaManagementController(OllamaClient ollamaClient) {
         this.ollamaClient = ollamaClient;
+    }
+
+    @PostMapping("/test")
+    public Mono<Map<String, Object>> testConnection(@RequestBody(required = false) Map<String, String> body) {
+        String prompt = (body != null && body.containsKey("prompt"))
+                ? body.get("prompt")
+                : "Say hello in one short sentence.";
+
+        long startTime = System.currentTimeMillis();
+
+        return ollamaClient.isReachable()
+                .flatMap(connected -> {
+                    if (!connected) {
+                        return Mono.just(Map.<String, Object>of(
+                                "success", false,
+                                "error", "Cannot reach Ollama server",
+                                "model", ollamaClient.getCurrentModel()
+                        ));
+                    }
+                    AtomicReference<StringBuilder> buffer = new AtomicReference<>(new StringBuilder());
+                    return ollamaClient.chatStream(java.util.List.of(
+                                    Map.of("role", "user", "content", prompt)
+                            ))
+                            .filter(chunk -> chunk.message() != null && chunk.message().content() != null)
+                            .doOnNext(chunk -> buffer.get().append(chunk.message().content()))
+                            .then(Mono.fromSupplier(() -> {
+                                long elapsed = System.currentTimeMillis() - startTime;
+                                return Map.<String, Object>of(
+                                        "success", true,
+                                        "model", ollamaClient.getCurrentModel(),
+                                        "response", buffer.get().toString(),
+                                        "elapsed_ms", elapsed
+                                );
+                            }));
+                })
+                .onErrorResume(e -> Mono.just(Map.<String, Object>of(
+                        "success", false,
+                        "error", e.getMessage() != null ? e.getMessage() : "Unknown error",
+                        "model", ollamaClient.getCurrentModel()
+                )));
     }
 
     @GetMapping("/status")

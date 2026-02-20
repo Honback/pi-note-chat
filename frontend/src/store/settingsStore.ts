@@ -79,11 +79,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   pullModel: (name: string) => {
     set({ isPulling: true, pullProgress: 'Starting download...' });
-    const eventSource = new EventSource(
-      `/api/ollama/models/pull?model=${encodeURIComponent(name)}`
-    );
 
-    // SSE via POST isn't standard for EventSource, use fetch instead
     fetch('/api/ollama/models/pull', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -115,9 +111,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
                   set({ pullProgress: parsed.status + pct });
                 }
               } catch {
-                // raw ndjson from ollama
                 try {
-                  // Try parsing each sub-line
                   for (const subline of data.split('\n')) {
                     if (!subline.trim()) continue;
                     const p = JSON.parse(subline);
@@ -139,7 +133,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       })
       .finally(() => {
         set({ isPulling: false });
-        eventSource.close();
         get().fetchModels();
       });
   },
