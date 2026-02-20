@@ -1,4 +1,4 @@
-ARG RUNTIME_IMAGE=arm32v7/eclipse-temurin:17-jre
+ARG RUNTIME_IMAGE=eclipse-temurin:17-jre
 
 # Stage 1: Build
 FROM maven:3.9-eclipse-temurin-17 AS build

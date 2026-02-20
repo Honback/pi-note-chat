@@ -1,4 +1,4 @@
-ARG RUNTIME_IMAGE=arm32v7/nginx:1.25-alpine
+ARG RUNTIME_IMAGE=nginx:1.25-alpine
 
 # Stage 1: Build React app
 FROM node:20-alpine AS build
