@@ -5,6 +5,19 @@ import type { Message } from '../types';
 
 const STREAM_TIMEOUT_MS = 60_000; // 60s safety timeout
 
+/** Generate UUID v4 — works in insecure HTTP contexts (e.g. http://192.168.x.x) */
+function uuid(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const h = [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
+}
+
 export function useChat() {
   const abortRef = useRef<AbortController | null>(null);
   const streamingRef = useRef(false);
@@ -43,7 +56,7 @@ export function useChat() {
         conversation = await createConversation();
       } catch (e) {
         const errorMsg: Message = {
-          id: crypto.randomUUID(),
+          id: uuid(),
           conversationId: 'error',
           role: 'assistant',
           content: `Failed to create conversation: ${(e as Error).message}`,
@@ -56,7 +69,7 @@ export function useChat() {
 
     // Add user message to UI immediately
     const userMsg: Message = {
-      id: crypto.randomUUID(),
+      id: uuid(),
       conversationId: conversation.id,
       role: 'user',
       content,
@@ -75,7 +88,7 @@ export function useChat() {
       if (streamingRef.current) {
         abort.abort();
         const timeoutMsg: Message = {
-          id: crypto.randomUUID(),
+          id: uuid(),
           conversationId: conversation!.id,
           role: 'assistant',
           content: 'Error: Response timeout. Ollama server may be unreachable or the model is taking too long.',
@@ -128,7 +141,7 @@ export function useChat() {
         onError: (event) => {
           console.error('Chat error:', event);
           const errorMsg: Message = {
-            id: crypto.randomUUID(),
+            id: uuid(),
             conversationId: conversation!.id,
             role: 'assistant',
             content: `Error: ${event.message || event.code || 'Unknown error'}`,
@@ -142,7 +155,7 @@ export function useChat() {
       if ((e as Error).name !== 'AbortError') {
         console.error('Chat failed:', e);
         const errorMsg: Message = {
-          id: crypto.randomUUID(),
+          id: uuid(),
           conversationId: conversation.id,
           role: 'assistant',
           content: `Connection error: ${(e as Error).message || 'Failed to reach server'}`,
