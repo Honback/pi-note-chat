@@ -23,7 +23,7 @@ public class OllamaClient {
 
     private final WebClient ollamaWebClient;
     private final ObjectMapper objectMapper;
-    private final String model;
+    private volatile String model;
 
     public OllamaClient(WebClient ollamaWebClient,
                          ObjectMapper objectMapper,
@@ -31,6 +31,11 @@ public class OllamaClient {
         this.ollamaWebClient = ollamaWebClient;
         this.objectMapper = objectMapper;
         this.model = model;
+    }
+
+    public void setCurrentModel(String model) {
+        this.model = model;
+        log.info("Active model switched to: {}", model);
     }
 
     /**

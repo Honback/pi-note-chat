@@ -105,6 +105,19 @@ public class OllamaManagementController {
                         .build()));
     }
 
+    @PutMapping("/model")
+    public Mono<Map<String, Object>> switchModel(@RequestBody Map<String, String> body) {
+        String modelName = body.get("model");
+        if (modelName == null || modelName.isBlank()) {
+            return Mono.just(Map.of("success", false, "error", "model name is required"));
+        }
+        ollamaClient.setCurrentModel(modelName);
+        return Mono.just(Map.of(
+                "success", true,
+                "model", modelName
+        ));
+    }
+
     @DeleteMapping("/models/{name}")
     public Mono<Map<String, Object>> deleteModel(@PathVariable String name) {
         return ollamaClient.deleteModel(name)

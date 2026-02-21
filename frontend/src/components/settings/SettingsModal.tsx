@@ -20,6 +20,7 @@ export function SettingsModal() {
   const fetchModels = useSettingsStore(s => s.fetchModels);
   const fetchStatus = useSettingsStore(s => s.fetchStatus);
   const fetchDeviceStats = useSettingsStore(s => s.fetchDeviceStats);
+  const switchModel = useSettingsStore(s => s.switchModel);
   const deleteModel = useSettingsStore(s => s.deleteModel);
   const pullModel = useSettingsStore(s => s.pullModel);
   const isPulling = useSettingsStore(s => s.isPulling);
@@ -194,24 +195,40 @@ export function SettingsModal() {
               </div>
             ) : (
               <div className={styles.modelList}>
-                {models.map(model => (
-                  <div key={model.name} className={styles.modelItem}>
-                    <div className={styles.modelInfo}>
-                      <div className={styles.modelName}>{model.name}</div>
-                      <div className={styles.modelMeta}>
-                        {formatSize(model.size)}
-                        {model.details?.parameter_size && ` · ${model.details.parameter_size}`}
-                        {model.details?.quantization_level && ` · ${model.details.quantization_level}`}
+                {models.map(model => {
+                  const isActive = model.name === ollamaStatus?.currentModel;
+                  return (
+                    <div key={model.name} className={`${styles.modelItem} ${isActive ? styles.modelActive : ''}`}>
+                      <div className={styles.modelInfo}>
+                        <div className={styles.modelName}>
+                          {isActive && <span className={styles.activeBadge}>Active</span>}
+                          {model.name}
+                        </div>
+                        <div className={styles.modelMeta}>
+                          {formatSize(model.size)}
+                          {model.details?.parameter_size && ` · ${model.details.parameter_size}`}
+                          {model.details?.quantization_level && ` · ${model.details.quantization_level}`}
+                        </div>
+                      </div>
+                      <div className={styles.modelActions}>
+                        {!isActive && (
+                          <button
+                            className={styles.useBtn}
+                            onClick={() => switchModel(model.name)}
+                          >
+                            Use
+                          </button>
+                        )}
+                        <button
+                          className={`${styles.deleteBtn} ${confirmDelete === model.name ? styles.confirm : ''}`}
+                          onClick={() => handleDelete(model.name)}
+                        >
+                          {confirmDelete === model.name ? 'Confirm?' : 'Delete'}
+                        </button>
                       </div>
                     </div>
-                    <button
-                      className={`${styles.deleteBtn} ${confirmDelete === model.name ? styles.confirm : ''}`}
-                      onClick={() => handleDelete(model.name)}
-                    >
-                      {confirmDelete === model.name ? 'Confirm?' : 'Delete'}
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>

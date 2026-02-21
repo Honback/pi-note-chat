@@ -17,6 +17,7 @@ interface SettingsState {
   fetchStatus: () => Promise<void>;
   fetchModels: () => Promise<void>;
   fetchDeviceStats: () => Promise<void>;
+  switchModel: (name: string) => Promise<void>;
   deleteModel: (name: string) => Promise<void>;
   pullModel: (name: string) => void;
   setSettingsOpen: (open: boolean) => void;
@@ -65,6 +66,15 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
           memoryTotal: -1,
         },
       });
+    }
+  },
+
+  switchModel: async (name: string) => {
+    try {
+      await api.switchOllamaModel(name);
+      await get().fetchStatus();
+    } catch (e) {
+      console.error('Failed to switch model:', e);
     }
   },
 

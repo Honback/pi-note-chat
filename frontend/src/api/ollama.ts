@@ -13,6 +13,13 @@ export function deleteOllamaModel(name: string): Promise<{ success: boolean }> {
   return apiFetch(`/ollama/models/${encodeURIComponent(name)}`, { method: 'DELETE' });
 }
 
+export function switchOllamaModel(model: string): Promise<{ success: boolean; model: string }> {
+  return apiFetch('/ollama/model', {
+    method: 'PUT',
+    body: JSON.stringify({ model }),
+  });
+}
+
 export function getDeviceStats(): Promise<DeviceStats> {
   return apiFetch('/device/stats');
 }
