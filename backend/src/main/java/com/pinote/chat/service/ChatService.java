@@ -73,25 +73,21 @@ public class ChatService {
                 });
 
         // On complete: save assistant message, generate title if first exchange
+        // Use explicit INSERT to avoid Spring Data treating pre-set ID as UPDATE
         Flux<ChatEvent> endEvent = Mono.defer(() -> {
             String fullContent = contentBuffer.get().toString();
-            Message assistantMsg = Message.create(conversationId, "assistant", fullContent);
-            assistantMsg.setId(assistantMsgId);
 
-            return messageRepo.save(assistantMsg)
-                    .flatMap(saved -> conversationService.incrementMessageCount(conversationId).thenReturn(saved))
-                    .flatMap(saved -> {
-                        // Check if this is the first exchange (2 messages: user + assistant)
-                        return conversationService.getConversation(conversationId)
-                                .flatMap(convWithMsgs -> {
-                                    if (convWithMsgs.conversation().getMessageCount() <= 2
-                                            && "New Conversation".equals(convWithMsgs.conversation().getTitle())) {
-                                        return titleService.generateTitleAsync(conversationId, userContent, fullContent)
-                                                .map(title -> (ChatEvent) new ChatEvent.MessageEnd(assistantMsgId, title))
-                                                .defaultIfEmpty(new ChatEvent.MessageEnd(assistantMsgId, null));
-                                    }
-                                    return Mono.just((ChatEvent) new ChatEvent.MessageEnd(assistantMsgId, null));
-                                });
+            return messageRepo.insertMessage(assistantMsgId, conversationId, "assistant", fullContent, java.time.Instant.now())
+                    .then(conversationService.incrementMessageCount(conversationId))
+                    .then(conversationService.getConversation(conversationId))
+                    .flatMap(convWithMsgs -> {
+                        if (convWithMsgs.conversation().getMessageCount() <= 2
+                                && "New Conversation".equals(convWithMsgs.conversation().getTitle())) {
+                            return titleService.generateTitleAsync(conversationId, userContent, fullContent)
+                                    .map(title -> (ChatEvent) new ChatEvent.MessageEnd(assistantMsgId, title))
+                                    .defaultIfEmpty(new ChatEvent.MessageEnd(assistantMsgId, null));
+                        }
+                        return Mono.just((ChatEvent) new ChatEvent.MessageEnd(assistantMsgId, null));
                     });
         }).flux();
 
